@@ -1,25 +1,29 @@
 
+import configureStore from './configure-store';
 import glContext from './gl-context';
+import {initializeCanvas, resizeCanvas} from './actions';
 
 // setup
-window.addEventListener('resize', resize_canvas);
+const store = configureStore();
+window.addEventListener('resize', () => store.dispatch(resizeCanvas(window.innerWidth, window.innerHeight)));
 
 // initialize
-resize_canvas();
+store.dispatch(initializeCanvas(window.innerWidth, window.innerHeight));
 render_iteration();
 
-function resize_canvas () {
-  let canvas = document.getElementById('target');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-
+// for comparison to determine if re-render is required
+let lastState = null;
 function render_iteration () {
   let canvas = document.getElementById('target');
-  glContext(canvas, (err, context) => {
-    if (err) return console.error('failed to initialize webgl', err);
-
-    // do stuff with webgl
-  });
+  let state = store.getState();
+  if (state !== lastState) {
+    lastState = state;
+    canvas.width = state.get('width');
+    canvas.height = state.get('height');
+    glContext(canvas, (err, context) => {
+      if (err) return console.error('failed to initialize webgl', err);
+      context.clear();
+    });
+  }
   requestAnimationFrame(render_iteration);
 }
